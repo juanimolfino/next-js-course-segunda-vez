@@ -1,3 +1,8 @@
 export default function Page() {
-    return <p>Dashboard Page</p>;
-  }
+  return (
+    <div>
+      <p>Dashboard Page</p>
+      <h1>Hola desde la rama navbar-nueva 🌊</h1>
+    </div>
+  );
+}
