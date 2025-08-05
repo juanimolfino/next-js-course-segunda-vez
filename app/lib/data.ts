@@ -8,16 +8,17 @@ import {
   Revenue,
 } from './definitions';
 import { formatCurrency } from './utils';
+import type { User } from '@/app/lib/definitions';
 
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
+const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' }); // el unico que usa postgress
 
 export async function fetchRevenue() {
   try {
     // Artificially delay a response for demo purposes.
     // Don't do this in production :)
 
-    // console.log('Fetching revenue data...');
-    // await new Promise((resolve) => setTimeout(resolve, 3000));
+    console.log('Fetching revenue data...');
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     const data = await sql<Revenue[]>`SELECT * FROM revenue`;
 
@@ -31,6 +32,7 @@ export async function fetchRevenue() {
 }
 
 export async function fetchLatestInvoices() {
+  await new Promise((resolve) => setTimeout(resolve, 5000));
   try {
     const data = await sql<LatestInvoiceRaw[]>`
       SELECT invoices.amount, customers.name, customers.image_url, customers.email, invoices.id
@@ -113,6 +115,15 @@ export async function fetchFilteredInvoices(
       ORDER BY invoices.date DESC
       LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
     `;
+
+    // PAGINACION LIMIT X OFFSET Y
+//     La variable offset indica cuántos registros debe saltar la base de datos antes de empezar a devolver resultados.
+
+// Sirve para implementar paginación en SQL.
+
+// LIMIT → cuántos resultados querés por página
+
+// OFFSET → cuántos resultados ya mostrás en páginas anteriores (los que querés saltear)
 
     return invoices;
   } catch (error) {
@@ -214,5 +225,57 @@ export async function fetchFilteredCustomers(query: string) {
   } catch (err) {
     console.error('Database Error:', err);
     throw new Error('Failed to fetch customer table.');
+  }
+}
+
+// google
+
+export async function getUserByEmail(email: string): Promise<User | undefined> {
+  try {
+    const user = await sql<User[]>`SELECT * FROM users WHERE email = ${email}`;
+    return user[0];
+  } catch (error) {
+    console.error('Failed to fetch user by email:', error);
+    return undefined;
+  }
+}
+
+// Crear usuario desde Google
+export async function createGoogleUser(googleUser: {
+  email: string;
+  name: string;
+  image_url?: string;
+  google_id: string;
+}): Promise<User | undefined> {
+  try {
+    const user = await sql<User[]>`
+      INSERT INTO users (id, email, name, image_url, google_id, provider, password)
+      VALUES (uuid_generate_v4(), ${googleUser.email}, ${googleUser.name}, ${googleUser.image_url || null}, ${googleUser.google_id}, 'google', null)
+      RETURNING *
+    `;
+    console.log('Created Google user:', user[0]);
+    return user[0];
+  } catch (error) {
+    console.error('Failed to create Google user:', error);
+    return undefined;
+  }
+}
+
+// Vincular cuenta Google a usuario existente
+export async function linkGoogleToUser(userId: string, googleId: string, name?: string, imageUrl?: string): Promise<User | undefined> {
+  try {
+    const user = await sql<User[]>`
+      UPDATE users 
+      SET google_id = ${googleId}, 
+          name = COALESCE(${name || null}, name),
+          image_url = COALESCE(${imageUrl || null}, image_url)
+      WHERE id = ${userId}
+      RETURNING *
+    `;
+    console.log('Linked Google to existing user:', user[0]);
+    return user[0];
+  } catch (error) {
+    console.error('Failed to link Google to user:', error);
+    return undefined;
   }
 }

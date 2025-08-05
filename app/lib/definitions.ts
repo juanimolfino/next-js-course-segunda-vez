@@ -6,7 +6,10 @@ export type User = {
   id: string;
   name: string;
   email: string;
-  password: string;
+  password?: string; // Ahora opcional para usuarios de Google
+  google_id?: string;
+  image_url?: string;
+  provider?: 'credentials' | 'google';
 };
 
 export type Customer = {

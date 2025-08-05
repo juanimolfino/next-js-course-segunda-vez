@@ -1,4 +1,5 @@
 import { Revenue } from './definitions';
+//prohibido usar postgres o cosas de server
 
 export const formatCurrency = (amount: number) => {
   return (amount / 100).toLocaleString('en-US', {
@@ -67,3 +68,4 @@ export const generatePagination = (currentPage: number, totalPages: number) => {
     totalPages,
   ];
 };
+
